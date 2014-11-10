@@ -50,5 +50,10 @@ case "$cmd" in
   source)
     echo https://github.com/izabera/archlog
     ;;
+  help)
+    echo "cerca nella cronologia con .grep nick frase"
+    echo "per non mostrare cose dette da te, .nolog    per mostrarle di nuovo, .log"
+    echo "per vedere il sorgente, visita https://github.com/izabera/archlog"
+    ;;
 esac
 
