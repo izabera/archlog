@@ -48,7 +48,7 @@ case "$cmd" in
     grep "$nick" lista &> /dev/null && sed -i -r "s/^$nick$//" lista
     ;;
   source)
-    echo http://github.com/izabera/archbot
+    echo https://github.com/izabera/archlog
     ;;
 esac
 
