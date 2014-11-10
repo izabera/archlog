@@ -17,7 +17,7 @@ case "$cmd" in
   grep)
     read -r target word <<< "$extra"
     [[ -z "$target" ]] && exit
-    grep "$target" lista &> /dev/null && echo "$target puzza. non so altro." && exit
+    grep "$target" lista &> /dev/null && exit
     temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
     {
       sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
@@ -45,6 +45,10 @@ case "$cmd" in
     echo "cerca nella cronologia con .grep nick frase"
     echo "per non mostrare cose dette da te, .nolog    per mostrarle di nuovo, .log"
     echo "per vedere il sorgente, visita https://github.com/izabera/archlog"
+    ;;
+  hidden)
+    echo -n "questi utenti non vogliono farsi loggare:"
+    cat lista | tr '\n' ' ' | sed 's/  / /g'
     ;;
 esac
 
