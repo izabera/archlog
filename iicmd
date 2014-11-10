@@ -7,7 +7,7 @@ netw="$4"
 chan="$5"
 self="$6"
 
-mesg=$(tr -dc 'a-zA-Z0-9 ' <<< $mesg)
+mesg=$(tr -dc 'a-zA-Z0-9 ' <<< "$mesg")
 
 read -r cmd extra <<< "$mesg"
 if [[ "$mesg" =~ .*\>.+ ]]; then
