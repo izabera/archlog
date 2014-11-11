@@ -53,23 +53,16 @@ case "$cmd" in
     ;;
   rank)
     [[ -z "$extra" ]] && extra="$nick"
-    #grep "$target" lista &> /dev/null && exit
     temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
     {
       sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
-        grep -Ei "^<.*?> (($extra(\+\+|--))|((\+\+|--)$extra));$"
+        grep -Ei "^<.*?> (($extra ?(\+\+|--))|((\+\+|--) ?$extra));?$"
     }  > "$temp"
     [[ -n "$nicks" ]] && echo -n "$nicks: "
     piu=$(grep "\+\+" "$temp" | wc -l | tr -d '\n')
     meno=$(grep -- "--" "$temp" | wc -l | tr -d '\n')
     tot=$(( piu - meno ))
     echo "rank di $extra: ++ = $piu, -- = $meno, totale = $tot"
-    #if (( $(wc -l <"$temp") > 1 )); then
-      #echo -n "http://arin.ga/"; sed -r "s/.*(.{6})$/\\1/" <<< $temp
-      #chmod a+r "$temp"
-    #else
-      #cat $temp
-    #fi
     ;;
 
 esac
