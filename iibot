@@ -11,6 +11,8 @@ declare -A networks=(
 chmod 700 "$ircdir"
 chmod 600 "$ircdir"/*/ident &>/dev/null
 
+set -f
+
 monitor() {
   tailf -n1 "$ircdir/$network/$channel/out" | \
     while read -r date time nick msg; do

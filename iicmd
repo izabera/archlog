@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-nick=$(tr -dc 'a-zA-Z0-9 _-' <<< "$1")
-mesg=$(tr -dc 'a-zA-Z0-9 _-' <<< "$2")
-ircd=$(tr -dc 'a-zA-Z0-9 _-' <<< "$3")
-netw=$(tr -dc 'a-zA-Z0-9 _-' <<< "$4")
-chan=$(tr -dc 'a-zA-Z0-9 _-' <<< "$5")
-self=$(tr -dc 'a-zA-Z0-9 _-' <<< "$6")
+nick=$(tr -dc 'a-zA-Z0-9 *_-' <<< "$1")
+mesg=$(tr -dc 'a-zA-Z0-9 *_-' <<< "$2")
+ircd=$(tr -dc 'a-zA-Z0-9 *_-' <<< "$3")
+netw=$(tr -dc 'a-zA-Z0-9 *_-' <<< "$4")
+chan=$(tr -dc 'a-zA-Z0-9 *_-' <<< "$5")
+self=$(tr -dc 'a-zA-Z0-9 *_-' <<< "$6")
 
 read -r cmd extra <<< "$mesg"
 if [[ "$mesg" =~ .*\>.+ ]]; then
@@ -20,23 +20,29 @@ case "$cmd" in
     grep "$target" lista &> /dev/null && exit
     temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
     {
-      sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
-      grep -Ei "^<$target> .*$word"
+      if [[ "$target" != '*' ]]; then
+        sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+        grep -Ei "^<$target> .*$word"
+      else
+        sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+        grep -i "$word" |  \
+        grep -Fivf lista
+      fi
     }  > "$temp"
     [[ "$nick" == "$target" ]] && sed "$ d" -i "$temp"
     [[ -n "$nicks" ]] && echo -n "$nicks: "
     if (( $(wc -l <"$temp") > 1 )); then
-      echo -n "http://arin.ga/"; sed -r "s/.*(.{6})$/\\1/" <<< $temp
+      echo -n "http://arin.ga/"; sed -r "s/.*(.{6})$/\\1/" <<< "$temp"
       chmod a+r "$temp"
     else
       cat $temp
     fi
     ;;
   nolog)
-    grep "$nick" lista &> /dev/null || echo "$nick" >> lista
+    grep "$nick" lista &> /dev/null || echo "<$nick>" >> lista
     ;;
   log)
-    grep "$nick" lista &> /dev/null && sed -i -r "s/^$nick$//" lista
+    grep "$nick" lista &> /dev/null && sed -i -r "s/^<$nick>$//" lista
     ;;
   source)
     echo https://github.com/izabera/archlog
@@ -47,22 +53,57 @@ case "$cmd" in
     echo "per vedere il sorgente, visita https://github.com/izabera/archlog"
     ;;
   hidden)
-    echo -n "questi utenti non vogliono farsi loggare:"
-    cat lista | tr -s '\n' ' ' | sed 's/  / /g'
+    echo -n "questi utenti non vogliono farsi loggare: "
+    cat lista | tr -s '\n' ' ' | tr -d '<>' | sed 's/ \+/ /g'
     echo
     ;;
   rank)
     [[ -z "$extra" ]] && extra="$nick"
     temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
-    {
-      sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+    if [[ "$extra" != '*' ]]; then
+      {
+        sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
         grep -Ei "^<.*?> (($extra ?(\+\+|--))|((\+\+|--) ?$extra));?$"
-    }  > "$temp"
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
-    piu=$(grep "\+\+" "$temp" | wc -l | tr -d '\n')
-    meno=$(grep -- "--" "$temp" | wc -l | tr -d '\n')
-    tot=$(( piu - meno ))
-    echo "rank di $extra: ++ = $piu, -- = $meno, totale = $tot"
+      }  > "$temp"
+      piu=$(grep "\+\+" "$temp" | wc -l | tr -d '\n')
+      meno=$(grep -- "--" "$temp" | wc -l | tr -d '\n')
+      tot=$(( piu - meno ))
+      [[ -n "$nicks" ]] && echo -n "$nicks: "
+      echo "rank di $extra: ++ = $piu, -- = $meno, totale = $tot"
+    else
+      {
+        sed -r "s/^.{17}[^ ]* //g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+        grep -Ei "^((\w+ ?(\+\+|--))|((\+\+|--) ?\w+));?$" |  \
+        tr -d ' ' |  \
+        sed -r -e 's/(\w*)(\+\+|--)/\2\1/g' -e 's/;$//' |  \
+        tr A-Z a-z |  \
+        sort |  \
+        uniq -c 
+      }  > "$temp"
+      nicklist=$(cut -c 11- "$temp" | sort -u)
+      tempp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
+      while read nickname; do
+        piu=$(grep "\+\+$nickname" "$temp")
+        if [[ "x$piu" == "x" ]]; then
+          piu=0
+        else
+          piu=$(echo "$piu" | awk '{print $1}')
+        fi
+        meno=$(grep -- "--$nickname" "$temp" | awk '{print $1}')
+        if [[ "x$meno" == "x" ]]; then
+          meno=0
+        else
+          meno=$(echo "$meno" | awk '{print $1}')
+        fi
+        tot=$(( piu - meno ))
+        echo "$tot $nickname (++ = $piu, -- = $meno)" >> "$tempp"
+      done <<< "$nicklist"
+      sort -nr "$tempp" > "$temp"
+      rm "$tempp"
+      [[ -n "$nicks" ]] && echo -n "$nicks: "
+      echo -n "http://arin.ga/"; sed -r "s/.*(.{6})$/\\1/" <<< "$temp"
+      chmod a+r "$temp"
+    fi
     ;;
 
 esac
