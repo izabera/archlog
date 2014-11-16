@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-nick=$(tr -dc 'a-zA-Z0-9 *+_-' <<< "$1")
-mesg=$(tr -dc 'a-zA-Z0-9 *+_-' <<< "$2")
-ircd=$(tr -dc 'a-zA-Z0-9 *+_-' <<< "$3")
-netw=$(tr -dc 'a-zA-Z0-9 *+_-' <<< "$4")
-chan=$(tr -dc 'a-zA-Z0-9 *+_-' <<< "$5")
-self=$(tr -dc 'a-zA-Z0-9 *+_-' <<< "$6")
+nick=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$1")
+[[ "$nick" == "phrik" ]] && exit
+mesg=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$2")
+ircd=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$3")
+netw=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$4")
+chan=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$5")
+self=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$6")
 
 read -r cmd extra <<< "$mesg"
 if [[ "$mesg" =~ .*\>.+ ]]; then
@@ -63,7 +64,8 @@ case "$cmd" in
     if [[ "$extra" != '*' ]]; then
       {
         sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
-        grep -Ei "^<.*?> (($extra ?(\+\+|--))|((\+\+|--) ?$extra));?$"
+        grep -Ei "^<.*?> (($extra ?(\+\+|--))|((\+\+|--) ?$extra));?$" |  \
+        grep -Evi "^<$extra>"
       }  > "$temp"
       piu=$(grep "\+\+" "$temp" | wc -l | tr -d '\n')
       meno=$(grep -- "--" "$temp" | wc -l | tr -d '\n')
@@ -72,10 +74,12 @@ case "$cmd" in
       echo "rank di $extra: ++ = $piu, -- = $meno, totale = $tot"
     else
       {
-        sed -r "s/^.{17}[^ ]* //g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
-        grep -Ei "^((\w+ ?(\+\+|--))|((\+\+|--) ?\w+));?$" |  \
+        cut -c 18- "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+        grep -Ei "^<[^ ]* ((\w+ ?(\+\+|--))|((\+\+|--) ?\w+));?$" |  \
         tr -d ' ' |  \
         sed -r -e 's/(\w*)(\+\+|--)/\2\1/g' -e 's/;$//' |  \
+        grep -Evi "<([^>]*)>..\1" |  \
+        sed -r 's/^<.*>//' |  \
         tr A-Z a-z |  \
         sort |  \
         uniq -c 
