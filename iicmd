@@ -64,7 +64,7 @@ case "$cmd" in
     if [[ "$extra" != '*' ]]; then
       {
         sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
-        grep -Ei "^<.*?> (($extra ?(\+\+|--))|((\+\+|--) ?$extra));?$" |  \
+        grep -Ei "^<[^ ]* (($extra ?(\+\+|--))|((\+\+|--) ?$extra));?$" |  \
         grep -Evi "^<$extra>"
       }  > "$temp"
       piu=$(grep "\+\+" "$temp" | wc -l | tr -d '\n')
