@@ -40,25 +40,31 @@ case "$cmd" in
     fi
     ;;
   nolog)
+    [[ -n "$nicks" ]] && echo -n "$nicks: "
     grep "$nick" lista &> /dev/null || echo "<$nick>" >> lista
     ;;
   log)
+    [[ -n "$nicks" ]] && echo -n "$nicks: "
     grep "$nick" lista &> /dev/null && sed -i -r "s/^<$nick>$//" lista
     ;;
   source)
+    [[ -n "$nicks" ]] && echo -n "$nicks: "
     echo https://github.com/izabera/archlog
     ;;
   help)
-    echo "cerca nella cronologia con .grep nick frase"
-    echo "per non mostrare cose dette da te, .nolog    per mostrarle di nuovo, .log"
+    [[ -n "$nicks" ]] && echo -n "$nicks: "
+    echo ".grep nick frase  Se nick == * cerca tra i nick di tutti.  Privacy on: .nolog, off: .log"
+    echo ".rank [nick]   Se non inserisci un nick, mostra il tuo rank. Se nick == * mostra la classifica"
     echo "per vedere il sorgente, visita https://github.com/izabera/archlog"
     ;;
   hidden)
+    [[ -n "$nicks" ]] && echo -n "$nicks: "
     echo -n "questi utenti non vogliono farsi loggare: "
     cat lista | tr -s '\n' ' ' | tr -d '<>' | sed 's/ \+/ /g'
     echo
     ;;
   rank)
+    [[ -n "$nicks" ]] && echo -n "$nicks: "
     [[ -z "$extra" ]] && extra="$nick"
     temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
     if [[ "$extra" != '*' ]]; then
@@ -105,7 +111,59 @@ case "$cmd" in
       sort -nr "$tempp" > "$temp"
       rm "$tempp"
       [[ -n "$nicks" ]] && echo -n "$nicks: "
-      echo -n "http://arin.ga/"; sed -r "s/.*(.{6})$/\\1/" <<< "$temp"
+      echo "http://arin.ga/${temp:(-6)}";
+      chmod a+r "$temp"
+    fi
+    ;;
+  tail)
+    [[ -n "$nicks" ]] && echo -n "$nicks: "
+    [[ -z "$extra" ]] && extra=5
+    numbers="^[1-9][0-9]*[ogsma]?$"
+    [[ $extra =~ $numbers ]] || extra=5
+    temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
+    {
+      case "${extra:(-1)}" in
+        o)
+          pattern=$(date -d "${extra:0:(-1)} hour ago" '+%Y-%m-%d%H:%M')
+          line=$(awk -v "t=$pattern" '$1$2 > t { print NR; exit }' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out")
+          sed -n "$line"',$p' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out"
+          ;;
+        g)
+          pattern=$(date -d "${extra:0:(-1)} day ago" '+%Y-%m-%d%H:%M')
+          line=$(awk -v "t=$pattern" '$1$2 > t { print NR; exit }' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out")
+          sed -n "$line"',$p' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out"
+          ;;
+        s)
+          pattern=$(date -d "${extra:0:(-1)} week ago" '+%Y-%m-%d%H:%M')
+          line=$(awk -v "t=$pattern" '$1$2 > t { print NR; exit }' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out")
+          sed -n "$line"',$p' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out"
+          ;;
+        m)
+          pattern=$(date -d "${extra:0:(-1)} month ago" '+%Y-%m-%d%H:%M')
+          line=$(awk -v "t=$pattern" '$1$2 > t { print NR; exit }' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out")
+          sed -n "$line"',$p' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out"
+          ;;
+        a)
+          pattern=$(date -d "${extra:0:(-1)} year ago" '+%Y-%m-%d%H:%M')
+          line=$(awk -v "t=$pattern" '$1$2 > t { print NR; exit }' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out")
+          sed -n "$line"',$p' "$HOME/ircbot/irc.freenode.net/#archlinux.it/out"
+          ;;
+        *)
+          tempp=$((extra + 1))
+          echo "$extra" >&2
+          tail -n "$((extra + 1))" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+          head -n "$extra"
+          ;;
+      esac
+    } > "$temp"
+    while read hidden ; do
+      [[ "x$hidden" != "x" ]] && sed -r "s/^(.{17})($hidden).*$/\1\2----------------------------/" -i "$temp"
+    done < lista
+    if [[ "$extra" == 1 ]] ; then
+      cat "$temp"
+      rm "$temp"
+    else 
+      echo "http://arin.ga/${temp:(-6)}"
       chmod a+r "$temp"
     fi
     ;;
