@@ -32,9 +32,9 @@ case "$cmd" in
       fi
     } | grep -Ev "^<\w+> \." > "$temp"
     [[ "$nick" == "$target" ]] && sed "$ d" -i "$temp"
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
-    if (( $(wc -l <"$temp") > 1 )); then
-      echo -n "http://arin.ga/";
+    [[ -n "$nicks" ]] && printf "%s: " "$nicks"
+    if (( $(wc -l "$temp") > 1 )); then
+      printf "http://arin.ga/"
       sed -r "s/.*(.{6})$/\\1/" <<< "$temp"
       chmod a+r "$temp"
     else
@@ -42,31 +42,47 @@ case "$cmd" in
     fi
     ;;
   nolog)
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
-    grep "$nick" lista &> /dev/null || echo "^<$nick>" >> lista
+    grep "$nick" lista &> /dev/null || echo "<$nick>" >> lista
     ;;
   log)
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
     grep "$nick" lista &> /dev/null && sed -i "/<$nick>/ d" lista
     ;;
   source)
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
+    [[ -n "$nicks" ]] && printf "%s: " "$nicks"
     echo https://github.com/izabera/archlog
     ;;
   help)
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
-    echo ".grep nick frase  Se nick == * cerca tra i nick di tutti.  Privacy on: .nolog, off: .log"
-    echo ".rank [nick]   Se non inserisci un nick, mostra il tuo rank. Se nick == * mostra la classifica"
-    echo "per vedere il sorgente, visita https://github.com/izabera/archlog"
+    [[ -n "$nicks" ]] && printf "%s: " "$nicks"
+    if [[ -z "$extra" ]] ; then
+      echo ".help COMANDO  (comandi: grep rank source log nolog hidden tail help)"
+    else
+      case "$extra" in
+        help) echo ".help COMANDO  (comandi: grep rank source log nolog hidden tail help)"
+          ;;
+        grep) echo ".grep nick frase   Se nick == * cerca tra i nick di tutti   Privacy on: .nolog, off: .log"
+          ;;
+        rank) echo ".rank [nick]   Se non inserisci un nick, mostra il tuo rank. Se nick == * mostra la classifica"
+          ;;
+        source) echo "per vedere il sorgente, visita https://github.com/izabera/archlog"
+          ;;
+        hidden) echo "mostra chi non vuole farsi loggare"
+          ;;
+        nolog) echo "disabilita i tuoi messaggi per .grep e .tail"
+          ;;
+        log) echo "abilita i tuoi messaggi per .grep e .tail  (DEFAULT)"
+          ;;
+        tail) echo ".tail [numero[ogsma]]   Mostra i log del canale. Se non viene specificato un numero, mostra le ultime 5 righe.  [ogsma] indicano ore giorni settimane mesi anni"
+      esac
+    fi
     ;;
   hidden)
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
-    echo -n "questi utenti non vogliono farsi loggare: "
-    cat lista | tr -s '\n' ' ' | tr -d '<>' | sed 's/ \+/ /g'
+    [[ -n "$nicks" ]] && printf "%s: " "$nicks"
+    printf "questi utenti non vogliono farsi loggare: "
+    tr '\n' ' ' < lista | tr -d '<>' 
     echo
     ;;
   rank)
-    [[ -n "$nicks" ]] && echo -n "$nicks: "
+    [[ -n "$nicks" ]] && printf "%s: " "$nicks"
     [[ -z "$extra" ]] && extra="$nick"
     temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
     if [[ "$extra" != '*' ]]; then
