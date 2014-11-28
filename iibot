@@ -24,7 +24,7 @@ monitor() {
 
       # if msg is a command, invoke iicmd
       [[ "${msg:0:1}" == "." ]] && \
-        exec $HOME/iibot/iicmd "$nick" "${msg:1}" "$ircdir" "$network" "$channel" "$nickname" | fold -w 255 &
+        exec "$HOME/archlog/iicmd" "$nick" "${msg:1}" "$ircdir" "$network" "$channel" "$nickname" | fold -w 255 &
     done > "$ircdir/$network/$channel/in"
   }
 

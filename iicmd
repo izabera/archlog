@@ -8,6 +8,7 @@ netw=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$4")
 chan=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$5")
 self=$(tr -dc 'a-zA-Z0-9 *<>+_-' <<< "$6")
 
+#set -x
 read -r cmd extra <<< "$mesg"
 if [[ "$mesg" =~ .*\>.+ ]]; then
   read -r nicks <<< "${extra#*>}"
@@ -22,18 +23,19 @@ case "$cmd" in
     temp=$(mktemp -p /var/www/arin.ga/public_html XXXXXX)
     {
       if [[ "$target" != '*' ]]; then
-        sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+        cut -c 18- "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
         grep -Ei "^<$target> .*$word"
       else
-        sed -r "s/^.{17}//g" "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
+        cut -c 18- "$HOME/ircbot/irc.freenode.net/#archlinux.it/out" |  \
         grep -i "$word" |  \
-        grep -Fivf lista
+        grep -ivf lista     # FIXME : this removes <nick> , not only ^<nick>
       fi
     } | grep -Ev "^<\w+> \." > "$temp"
     [[ "$nick" == "$target" ]] && sed "$ d" -i "$temp"
     [[ -n "$nicks" ]] && echo -n "$nicks: "
     if (( $(wc -l <"$temp") > 1 )); then
-      echo -n "http://arin.ga/"; sed -r "s/.*(.{6})$/\\1/" <<< "$temp"
+      echo -n "http://arin.ga/";
+      sed -r "s/.*(.{6})$/\\1/" <<< "$temp"
       chmod a+r "$temp"
     else
       cat "$temp"
@@ -41,11 +43,11 @@ case "$cmd" in
     ;;
   nolog)
     [[ -n "$nicks" ]] && echo -n "$nicks: "
-    grep "$nick" lista &> /dev/null || echo "<$nick>" >> lista
+    grep "$nick" lista &> /dev/null || echo "^<$nick>" >> lista
     ;;
   log)
     [[ -n "$nicks" ]] && echo -n "$nicks: "
-    grep "$nick" lista &> /dev/null && sed -i -r "s/^<$nick>$//" lista
+    grep "$nick" lista &> /dev/null && sed -i "/<$nick>/ d" lista
     ;;
   source)
     [[ -n "$nicks" ]] && echo -n "$nicks: "
